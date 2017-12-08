@@ -1,0 +1,140 @@
+---
+title: "HW11"
+author: "Tural Ismayilov & Polad Mahmudov & Mansur Alizada"
+date: "December 8, 2017"
+output: pdf_document
+---
+
+**Team named "GARABAGH" members:**  
+Tural Ismayilov (Software Enigeenring)
+Mansur Alizada (Computer Science)
+Polad Mahmudov (Software Engineering)
+
+**We are working on the project named House Prices: Advanced Regression Techniques on the Kaggle**  
+
+**link: **  
+https://www.kaggle.com/c/house-prices-advanced-regression-techniques
+
+
+**Bitbucket link:**  
+https://turalismayilov@bitbucket.org/garabagh/dm.git
+
+#EX1  
+#Business understanding  
+##Identifying your business goals  
+###Background  
+Our customers, want to sell a house and they do not know the price which they can take - it can't be too low or too high. To find house
+price they usually try to find similar properties in their neighborhood and based on gathered data they try to assess their house price.
+But this is not always good. (Guessing the price by looking at similar house may be useful, but there can be certain details that have big
+influence on the price, but are not considered therefore may make difficult the selling proccess.) Although that method can work, but
+there is better way for predicting house price.
+
+###Bussiness goals:
+Increase the gain of seller.
+
+###Bussiness success criteria:
+Sales increasing, both the seller and buyer stay satisfied with the price of house.
+
+##Assessing your situation
+###Inventory of resources
+With 79 explanatory variables describing (almost) every aspect of residential homes in Ames, Iowa, with its description data is available.
+
+###Requirements, assumptions, and constraints
+Achieving top 20% result with RMSE in Kaggle is required. 
+
+###Risks and contingencies
+If an Internet outage in our dormitory could pose a problem, perhaps our contingency could be to work at university until the outage has
+ended.
+If the prediction is not well enough, our contingency is to approach our instructor for help.
+
+###Terminology
+**Bias** - Positive values of bias indicate the model tends to overestimate the price (on average) while negative values indicate the
+model tends to underestimate price.  
+**Maimum Deviation** - It identifies the worst prediction tey made in the validation data set.  
+**Training set** - this is a set of examples used to fit the parameters of the mode.  
+**Validation set** - The fitted model is used to predict the responses fot the observations in a second dataset called validation dataset.  
+**Test set** - is a dataset used to provude an unbiased evaluation of final model fit on the training dataset.  
+**Root Mean Square Error** - used to obtain the coefficient estimates from the original dataset.  
+**Mean Absolute Deviation** - Average error regardless of sign.  
+
+###Costs and benefits
+The cost is the loss in gain when the house is sold with underestimated price, and gain happens when it's sold with enough gain.
+
+##Defining your data-mining goals
+###Data-mining goals
+Data mining goal is to predict house price for its indicators.
+
+###Data-mining success criteria
+Prediction with RMSE less than 0.11979.
+
+EX2
+#Data understanding
+##Gathering data
+###Outline data requirements
+We need previous sales of house and its details to fit regression model on them for prediction.
+
+###Verify data availability
+Approximately 6 percent of elements are NA, so in that case, we will use mice for handling missing data.
+```{r}
+train <- read.csv('train.csv')
+(sum(is.na(train)) / (nrow(train)*ncol(train))) * 100
+```
+
+###Define selection criteria
+The data will be taken from the link provided above.
+```{r}
+train <- read.csv('train.csv') 
+str(train)
+```
+
+###Describing data
+```{r}
+cat(readLines('data description.txt'), sep = '\n')
+```
+
+###Exploring data
+```{r}
+summary(train)
+```
+
+###Verifying data quality
+There are some missing data, we have decided to solve this problem by using mice. This is the initial plan, if the mice method does not
+work properly we will narrow data size. 
+
+#EX3
+##Setting up and planning your project
+###Create a project repository either in GitHub or Bitbucket.  
+
+https://www.kaggle.com/c/house-prices-advanced-regression-techniques  
+
+###Register you project by adding a new entry into the List of projects  
+New slide was added also to the project repository and the link is:  
+https://docs.google.com/presentation/d/1veA_WQcfRRx7hQnE8qklmsLYceWzQGrPHrieSEWqcaI/edit#slide=id.g2a4c3a4a7d_6_0  
+
+###Make a detailed plan of your project with a list of tasks. Specify how many hours each team member is going to contribute to each task
+
+**Acquiring the data and create our environment  
+  - Downloading the data  
+  - Doing some plotting  
+Exploring the data and engineer Features  
+  - Working with Numeric Features  
+	- Displaying the correlation between columns  
+	- Creating a pivot table to further investigate the relationships  
+	- Handling null values  
+	- Wrangling the non-numeric Features  
+	- Transforming features  
+Building a linear model  
+Begining Linear regression modelling  
+Evaluating the performance and visualize results  
+Trying to improve the model  
+Making a submission  
+	- Creating csv file with ids and predictions according to the sample format  
+Submitting our results**
+
+For the initial calculations each team member will spend approximately 18 hours.  
+
+###Add the results from business understanding, data understanding and planning to your project repository. Report the links to where these results are listed.
+
+It was added to project repository.
+
+###Prepare to pitch your project at the practice session
