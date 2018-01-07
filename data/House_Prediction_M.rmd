@@ -381,3 +381,168 @@ factorInfo <- data.frame(ColNames = colnames(studydata),
                          NLevels = as.numeric(as.character(
                              apply(studydata, 2, function(x) {nlevels(as.factor(x))}))))
 ```
+
+##3: More feature engineering
+Converting caterogical features to numeric one is good for our prediction that it will make it more accurate. So we have decided
+to do that.
+```{r}
+catToNum <- c('None:0','Po:1','Fa:2','TA:3','Gd:4','Ex:5')
+
+trainNum$BsmtExposure <- as.numeric(convertFeature(trainFac$BsmtExposure, 
+                            c('None:0','No:1','Mn:2','Av:3','Gd:4')))
+trainNum$BsmtFinType1 <- as.numeric(convertFeature(trainFac$BsmtFinType1, 
+                            c('None:0','Unf:1','LwQ:2','Rec:3','BLQ:4','ALQ:5','GLQ:6')))
+trainNum$BsmtFinType2 <- as.numeric(convertFeature(trainFac$BsmtFinType2, 
+                            c('None:0','Unf:1','LwQ:2','Rec:3','BLQ:4','ALQ:5','GLQ:6')))
+trainNum$Functional <- as.numeric(convertFeature(trainFac$Functional, 
+                            c('Oth:0','Sal:1','Sev:2','Maj2:3','Maj1:4','Mod:5','Min2:6','Min1:7','Typ:8')))
+trainNum$GarageFinish <- as.numeric(convertFeature(trainFac$GarageFinish, 
+                            c('None:0','Unf:1','RFn:2','Fin:3')))
+trainNum$Fence <- as.numeric(convertFeature(trainFac$Fence, 
+                            c('None:0','MnWw:1','GdWo:2','MnPrv:3','GdPrv:4')))
+trainNum$ExterQual <- as.numeric(convertFeature(trainFac$ExterQual, catToNum))
+trainNum$ExterCond <- as.numeric(convertFeature(trainFac$ExterCond, catToNum))
+trainNum$BsmtQual <- as.numeric(convertFeature(trainFac$BsmtQual, catToNum))
+trainNum$BsmtCond <- as.numeric(convertFeature(trainFac$BsmtCond, catToNum))
+trainNum$HeatingQC <- as.numeric(convertFeature(trainFac$HeatingQC, catToNum))
+trainNum$KitchenQual <- as.numeric(convertFeature(trainFac$KitchenQual, catToNum))
+trainNum$FireplaceQu <- as.numeric(convertFeature(trainFac$FireplaceQu, catToNum))
+trainNum$GarageQual <- as.numeric(convertFeature(trainFac$GarageQual, catToNum))
+trainNum$GarageCond <- as.numeric(convertFeature(trainFac$GarageCond, catToNum))
+trainNum$PoolQC <- as.numeric(convertFeature(trainFac$PoolQC, catToNum))
+
+#Again we categorized them
+trainNum$OverallQual2 <- as.numeric(convertFeature(trainFac$OverallQual,
+                                    c('1:1','2:1','3:1','4:2','5:2','6:2','7:3','8:3','9:3','10:3')))
+trainNum$OverallCond2 <- as.numeric(convertFeature(trainFac$OverallCond,
+                                    c('1:1','2:1','3:1','4:2','5:2','6:2','7:3','8:3','9:3','10:3')))
+trainNum$OverallQual <- as.numeric(as.character(trainFac$OverallQual))
+trainNum$OverallCond <- as.numeric(as.character(trainFac$OverallCond))
+
+#This function is for 
+binaryFeature <- function (col, needFac) {
+    output <- as.character(col)
+    output <- sapply(output, function(x) as.numeric(ifelse(x %in% needFac,1,0)))
+    as.factor(output)
+}
+
+# If the price is a discounted price so 1 otherwise 0.
+trainFac$SaleNormal <- binaryFeature(trainFac$SaleCondition, c('Normal','Partial'))
+
+# If it is uncompleted saleIs then 1 otherwise 0.
+trainFac$SaleComplete <- binaryFeature(trainFac$SaleCondition, 'Partial')
+
+# If the shape is regular then 1 otherwise 0.
+trainFac$IsRegularShape <- binaryFeature(trainFac$LotShape, 'Reg')
+
+# If the zone is prime then 1 otherwise 0.
+trainFac$IsPrimeZone <- binaryFeature(trainFac$MSZoning, c('FV','RL','RP'))
+
+# If it is Normal Zone then 1 otherwise 0.
+trainFac$IsNormalZone <- binaryFeature(trainFac$MSZoning, c('RH','RM'))
+
+## Based on mean Sale Price we grouped Neighborhood 
+trainNum$NeighborhoodBin <- as.numeric(convertFeature(trainFac$Neighborhood,
+                                c('MeadowV:0','IDOTRR:1','BrDale:1','OldTown:1','Edwards:1',
+                                  'BrkSide:1','Sawyer:1','Blueste:1','SWISU:2','NAmes:2',
+                                  'NPkVill:2','Mitchel:2','SawyerW:2','Gilbert:2','NWAmes:2',
+                                  'Blmngtn:2','CollgCr:2','ClearCr:3','Crawfor:3',
+                                  'Veenker:3','Somerst:3','Timber:3','StoneBr:4','NoRidge:4','NridgHt:4')))
+
+# How old is the property when it was sold?
+trainNum$Age <- as.numeric(as.character(trainFac$YrSold)) - as.numeric(as.character(trainFac$YearBuilt))
+
+# Convert these categorial feature to numeric because there is an expectation that higher the count, higher the Sale Price 
+trainNum$BsmtBath <- as.numeric(as.character(trainFac$BsmtFullBath)) + as.numeric(as.character(trainFac$BsmtHalfBath)) * 0.5
+trainNum$Bath <- as.numeric(as.character(trainFac$FullBath)) + as.numeric(as.character(trainFac$HalfBath)) * 0.5
+trainNum$TotalBath <- trainNum$BsmtBath + trainNum$Bath
+trainNum$BedroomAbvGr <- as.numeric(as.character(trainFac$BedroomAbvGr))
+trainNum$KitchenAbvGr <- as.numeric(as.character(trainFac$KitchenAbvGr))
+trainNum$TotRmsAbvGrd <- as.numeric(as.character(trainFac$TotRmsAbvGrd))
+trainNum$Fireplaces <- as.numeric(as.character(trainFac$Fireplaces))
+trainNum$GarageCars <- as.numeric(as.character(trainFac$GarageCars))
+
+normalize <- function(x) {
+    return ((x - min(x)) / (max(x) - min(x)))
+}
+
+# Creating a timestamp feature for each transaction.
+trainNum$DtSold <- as.numeric(as.character(trainFac$YrSold)) + as.numeric(as.character(trainFac$MoSold))/12
+trainNum$DtSold <- normalize(trainNum$DtSold)
+```
+
+##4: Feature Elimination
+With new features created, deleting some features that may no longer be useful.
+```{r}
+trainFac <- trainFac[,!colnames(trainFac) %in% 'LotShape']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'LandContour']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'LandSlope']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'Electrical']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'GarageType']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'PavedDrive']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'MiscFeature']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'Neighborhood']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'MSSubClass']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'YrSold']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'MoSold']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'YearRemodAdd']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'YearBuilt']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BsmtFullBath']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BsmtHalfBath']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'FullBath']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'HalfBath']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BedroomAbvGr']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'KitchenAbvGr']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'TotRmsAbvGrd']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'Fireplaces']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'OverallQual']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'OverallCond']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BsmtQual']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BsmtCond']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'HeatingQC']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'KitchenQual']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'FireplaceQu']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'GarageQual']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'GarageCond']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'PoolQC']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BsmtExposure']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BsmtFinType1']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'BsmtFinType2']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'Functional']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'GarageFinish']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'Fence']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'GarageYrBlt']
+trainFac <- trainFac[,!colnames(trainFac) %in% 'GarageCars']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'X2ndFlrSF']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'MasVnrArea']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'WoodDeckSF']
+
+trainFac$ExterQual <- NULL
+trainFac$ExterCond <- NULL
+```
+
+#STEP 4: Building a model
+
+Now we can recombine trainNum and trainFac to make train data, then we should add log of Sale Price to newly made train data. 
+
+```{r, warning=FALSE, message=FALSE}
+combi2nd <- cbind(trainNum,trainFac)
+
+train <- cbind(combi2nd[1:nrow(train),],SalePrice = train[,c(ncol(train))])
+test <- combi2nd[(nrow(train)+1):nrow(combi2nd),]
+
+train$SalePrice <- log1p(train$SalePrice)
+
+tr.control <- trainControl(method="repeatedcv", number = 100,repeats = 100)
+lasso_model <- train(SalePrice~., data=train,method="glmnet",metric="RMSE",
+                      maximize=FALSE,trControl=tr.control,
+                      tuneGrid=expand.grid(alpha=1,lambda=c(1,0.1,0.05,0.01,seq(0.009,0.001,-0.001), 0.00075,0.0005,0.0001)))
+
+lassopreds <- exp(predict(lasso_model, test))-1
+```
+
+#STEP 5: Make and submit predictions
+```{r}
+testing <- read.csv('data/test.csv')
+write.csv(data.frame(Id=testing$Id,SalePrice=lassopreds),"lasso_5.csv",row.names = F)
+```
