@@ -40,7 +40,7 @@ We will use read.csv() to read csv files. The read.csv() method creates a DataFr
 ```{r }
 train <- read.csv('train.csv')
 test <- read.csv('test.csv')
-description <- read.csv('data/data description.txt')
+description <- read.csv('data description.txt')
 ```
 
 Let's check the size of our data and explore it.
@@ -180,4 +180,204 @@ dataType <- c('NAN','F','F','N','N','F','F','F','F','F','F','F',
 colInfo <- data.frame(No = seq(1:80), 
                        Column = names(test),
                        DataType = dataType)
+```
+
+##2: Handling Null Values
+Let's examine null values. To start with dealing null values, let's report top null values by returning Series of the counts of the null values in each column.
+```{r}
+sort(colSums(is.na(train)))
+```
+
+If we look at the data description.txt file, we can notice that, in the case of PoolQC, this column refers to Pool Quality.
+
+PoolQC: Pool quality
+		
+       Ex -	Excellent
+       Gd	- Good
+       TA	- Average/Typical
+       Fa	- Fair
+       NA	- No Pool
+       
+In that column having NaN means that no or 0 pool. So removing this NaNs can result bad prediction. Therefore changing these values to
+None, in the case of PoolQC is better. We can see similar relationship between many of the columns.
+```{r}
+#We will combine test and train set and do data cleaning. It will help us to predict better
+comb <- rbind(train[,-c(ncol(train))], test)
+
+# Assume 0 linear feet of street connected to property if NA
+comb$LotFrontage[is.na(comb$LotFrontage)] <- 0
+
+# These factors contains NA values which mean the property has no such facility
+# Becase the column is factor, in order to change NA to None we should add None level, then change all NAs to None
+# We will make method for it called nullToY
+
+nullToY <- function(x, y) {
+  x <- as.character(x)
+  x[is.na(x)] <- y
+  x <- as.factor(x)
+  return(x)
+}
+ 
+comb$MiscFeature <- nullToY(comb$MiscFeature, 'None')
+comb$Fence <- nullToY(comb$Fence, 'None')
+comb$PoolQC <- nullToY(comb$PoolQC, 'None')
+comb$FireplaceQu <- nullToY(comb$FireplaceQu, 'None')
+comb$Alley <- nullToY(comb$Alley, 'None')
+
+# Unknown categorical feature set to a new category value - OTHER
+comb$SaleType <- nullToY(comb$SaleType, 'Oth')
+comb$MSZoning <- nullToY(comb$MSZoning, 'OTH')
+comb$Exterior1st <- nullToY(comb$Exterior1st, 'Other')
+comb$Exterior2nd <- nullToY(comb$Exterior2nd, 'Other')
+comb$Functional <- nullToY(comb$Functional, 'Oth')
+
+# Unknown categorical feature set to most common categorical value
+comb$Utilities[is.na(comb$Utilities)] <- comb$Utilities[which.max(comb$Utilities)]
+comb$Electrical[is.na(comb$Electrical)] <- comb$Electrical[which.max(comb$Electrical)]
+comb$KitchenQual[is.na(comb$KitchenQual)] <- comb$KitchenQual[which.max(comb$KitchenQual)]
+
+# If both MasVnrType and MasVnrArea columns are NA, Area should be 0 and Type should be None
+comb[is.na(comb$MasVnrType) & is.na(comb$MasVnrArea),]$MasVnrArea <- 0
+comb[is.na(comb$MasVnrType) & comb$MasVnrArea >= 0,]$MasVnrType <- 'None'
+comb[comb$MasVnrType %in% 'None' & comb$MasVnrArea >= 0,]$MasVnrArea <- 0
+comb[!comb$MasVnrType %in% 'None' & comb$MasVnrArea == 0,]$MasVnrType <- 'None'
+
+# if Area is 0, the rest of the Garage feature should be None
+# if Area is 0, the rest of the Garage feature should be None
+comb$GarageType <- nullToY(comb$GarageType, 'None')
+comb$GarageFinish <- nullToY(comb$GarageFinish, 'None')
+comb$GarageQual <- nullToY(comb$GarageQual, 'None')
+comb$GarageCond <- nullToY(comb$GarageCond, 'None')
+comb$GarageYrBlt <-nullToY(comb$GarageYrBlt, '0') 
+comb[is.na(comb$GarageCars),]$GarageCars <- 0
+comb[is.na(comb$GarageArea),]$GarageArea <- 0
+
+#if GareageArea is 0, so the GarageType is None
+comb[comb$GarageArea == 0,]$GarageType <- 'None'
+
+comb[comb$GarageYrBlt %in% '0' & 
+          comb$GarageType %in% 'Detchd' & 
+          comb$GarageCars > 0 & 
+          comb$GarageArea > 0,]$GarageFinish <- comb$GarageFinish[which.max(comb$GarageFinish)]
+
+comb[comb$GarageYrBlt %in% '0' & 
+          comb$GarageType %in% 'Detchd' & 
+          comb$GarageCars > 0 & 
+          comb$GarageArea > 0,]$GarageQual <- comb$GarageQual[which.max(comb$GarageQual)]
+
+comb[comb$GarageYrBlt %in% '0' & 
+          comb$GarageType %in% 'Detchd' & 
+          comb$GarageCars > 0 & 
+          comb$GarageArea > 0,]$GarageCond <- comb$GarageCond[which.max(comb$GarageCond)]
+
+# if Area is 0, the rest of the Basement feature should be None
+comb$BsmtQual <- nullToY(comb$BsmtQual, 'None')
+comb$BsmtCond <- nullToY(comb$BsmtCond, 'None')
+comb$BsmtExposure <- nullToY(comb$BsmtExposure, 'None')
+comb$BsmtFinType1 <- nullToY(comb$BsmtFinType1, 'None')
+comb$BsmtFinType2 <- nullToY(comb$BsmtFinType2, 'None')
+
+comb[is.na(comb$TotalBsmtSF),]$BsmtFinSF1 <- 0
+comb[is.na(comb$TotalBsmtSF),]$BsmtFinSF2 <- 0
+comb[is.na(comb$TotalBsmtSF),]$BsmtUnfSF <- 0
+comb[is.na(comb$TotalBsmtSF),]$BsmtFullBath <- 0
+comb[is.na(comb$TotalBsmtSF),]$BsmtHalfBath <- 0
+comb[is.na(comb$TotalBsmtSF),]$TotalBsmtSF <- 0
+
+comb[comb$TotalBsmtSF == 0,]$BsmtFullBath  <- 0
+comb[comb$TotalBsmtSF == 0,]$BsmtHalfBath <- 0
+```
+
+Now let's examine the correlation between numeric features and Sale Price. It is useful to make 2 numeric features that contains the total are of property and total area of 1st and 2nd floor. It will lead to better prediction.
+```{r}
+trainNum <- comb[,colInfo[colInfo$DataType=="N",]$No]
+
+#Adding the useful nueric features
+trainNum$TotalArea <- trainNum$LotFrontage + trainNum$LotArea + trainNum$MasVnrArea + trainNum$BsmtFinSF1 + 
+                    trainNum$BsmtFinSF2 + trainNum$BsmtUnfSF + trainNum$TotalBsmtSF + trainNum$X1stFlrSF + 
+                    trainNum$X2ndFlrSF + trainNum$GrLivArea + trainNum$GarageArea + trainNum$WoodDeckSF +
+                    trainNum$OpenPorchSF + trainNum$EnclosedPorch + trainNum$X3SsnPorch + 
+                    trainNum$ScreenPorch + trainNum$LowQualFinSF + trainNum$PoolArea
+
+trainNum$TotalArea1st2nd <- trainNum$X1stFlrSF + trainNum$X2ndFlrSF
+
+trainNumLowered <- trainNum[,1:(ncol(trainNum)-2)]
+trainNumLowered <- trainNumLowered[1:nrow(train),]
+trainNumLowered$SalePrice <- train$SalePrice
+
+corrplot(cor(trainNumLowered), type="lower", order="hclust")
+```
+
+
+#STEP 3: Engineer and transform the features and the target variable
+##1: Numeric features
+```{r}
+#Removing some features regarding Correlation Analysis
+trainNum <- trainNum[,!colnames(trainNum) %in% 'EnclosedPorch']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'LowQualFinSF']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'MiscVal']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'OpenPorchSF']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'PoolArea']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'ScreenPorch']
+trainNum <- trainNum[,!colnames(trainNum) %in% 'X3SsnPorch']
+
+#Now it is time to normalise the numeric features
+trainNum <- data.frame(lapply(trainNum, function(x) {log1p(x)}))
+```
+
+##2: Categorical features
+We grouped the months with high sales transactions with categorical features. Months with high transactions can have an impact to Sale
+Price.
+```{r}
+#First identify the categorical features
+trainFac <- comb[,colInfo[colInfo$DataType=="F",]$No]
+trainFac <- data.frame(lapply(trainFac, as.factor))
+ncol(trainFac)
+
+anly_data <- train %>% group_by(MoSold) %>% summarise(Count = n())
+anly_data$MoSold <- as.factor(anly_data$MoSold)
+ggplot(data=anly_data, aes(x=MoSold, y=Count)) + geom_bar(stat="identity", fill="steelblue") + theme_minimal()
+```
+
+We can observe that in the middle of the year the counts are higher than others. So we will determine it as 0 or 1 showing whether 
+the counts are high or not.
+```{r}
+convertFeature <- function (colname, input) {
+    colname <- as.character(colname)
+    for (s in input) {
+        s <- strsplit(s,":")[[1]]
+        fac <- s[1]
+        num <- s[2]
+        colname <- replace(colname, colname == fac , num)
+    }
+    colname
+}
+
+trainFac$PopularMonth <- as.factor(convertFeature(trainFac$MoSold, 
+                                                c('1:0','2:0','3:0','4:1',
+                                                  '5:1','6:1','7:1','8:0',
+                                                  '9:0','10:0','11:0','12:0')))
+```
+
+We know that certain types of dwellings can be popular and therefore may have an impact to Sale Price. So we created new categorical
+feature by grouping types of dwellings with high transactions.
+```{r}
+anly_data <- train %>% group_by(MSSubClass) %>% summarise(Count = n())
+anly_data$MSSubClass <- as.factor(anly_data$MSSubClass)
+ggplot(data=anly_data, aes(x=MSSubClass, y=Count)) + geom_bar(stat="identity", fill="steelblue")+ theme_minimal()
+```
+
+Now we can add new vector that shows whether given type of dwelling is popular or not.
+```{r}
+trainFac$PopularDwelling <- as.factor(convertFeature(trainFac$MSSubClass, 
+                                                     c('20:1','30:0','40:0','45:0','50:1',
+                                                       '60:1','70:0','75:0','80:0','85:0',
+                                                       '90:0','120:1','150:0','160:0',
+                                                       '180:0','190:0')))
+
+
+studydata <- trainFac 
+factorInfo <- data.frame(ColNames = colnames(studydata), 
+                         NLevels = as.numeric(as.character(
+                             apply(studydata, 2, function(x) {nlevels(as.factor(x))}))))
 ```
