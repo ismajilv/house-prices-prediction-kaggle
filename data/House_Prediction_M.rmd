@@ -38,8 +38,8 @@ make predictions using the test.csv data.
 
 We will use read.csv() to read csv files. The read.csv() method creates a DataFrame from a csv file.
 ```{r }
-train <- read.csv('data/train.csv')
-test <- read.csv('data/test.csv')
+train <- read.csv('train.csv')
+test <- read.csv('test.csv')
 description <- read.csv('data/data description.txt')
 ```
 
